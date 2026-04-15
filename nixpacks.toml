@@ -9,4 +9,5 @@ cmds = ["g++ main.cpp -o huffman_engine"]
 
 
 [start]
-cmd = "gunicorn app:app"
+cmd = "gunicorn main:app"
+
