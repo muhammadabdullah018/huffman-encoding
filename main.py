@@ -17,7 +17,9 @@ OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
 if sys.platform.startswith('win'):
     EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
 else:
-    EXE_PATH = os.path.join(BASE_DIR, 'huffman_engine')
+    # Force absolute path for Railway/Linux
+    EXE_PATH = '/app/huffman_engine'
+
 
 
 
@@ -274,7 +276,8 @@ def run_cpp_backend(filename, mode, input_path):
         else:
             return False, {'error': 'Python Fallback Failed', 'details': msg}
     
-    return False, {'error': 'C++ Executable (main.exe) missing or invalid. Please compile the project to use decompression.'}
+    return False, {'error': f'Core Engine handle failed. Executable not found at {EXE_PATH}. Please ensure compilation succeeded.'}
+
 
 @app.route('/download/<filename>')
 def download_file(filename):

@@ -1,14 +1,14 @@
 [phases.setup]
-nixPkgs = ["python3", "gcc"]
+nixPkgs = ["python313", "gcc"]
+cmds = ["pip install -r requirements.txt", "g++ main.cpp -o huffman_engine", "chmod +x huffman_engine"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
 
 [phases.build]
-cmds = ["g++ main.cpp -o huffman_engine", "chmod +x huffman_engine"]
+cmds = []
 
 
 
 [start]
-cmd = "gunicorn main:app"
-
+cmd = "gunicorn --bind 0.0.0.0:${PORT:-8080} main:app"
