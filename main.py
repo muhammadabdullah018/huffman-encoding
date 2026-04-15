@@ -66,36 +66,13 @@ def generate_codes(node, prefix="", codebook={}):
         generate_codes(node.right, prefix + "1", codebook)
     return codebook
 
-def python_compress(input_path, output_path):
-    try:
-        with open(input_path, 'r', encoding='utf-8') as f:
-            text = f.read()
-        
-        if not text:
-            return False, "Input file is empty"
+        return True, {
+            "original_size": len(text),
+            "compressed_size": len(b),
+            "ratio": round((1.0 - (len(b) / len(text))) * 100, 2) if len(text) > 0 else 0,
+            "msg": f"Compressed using Python Logic.\nOriginal: {len(text)} chars\nCompressed: {len(b)} bytes"
+        }
 
-        freq_table = build_frequency_table(text)
-        root = build_huffman_tree(freq_table)
-        codes = generate_codes(root)
-        
-        encoded_text = "".join(codes[char] for char in text)
-        
-        # Padding
-        extra_padding = 8 - len(encoded_text) % 8
-        encoded_text += "0" * extra_padding
-        padded_info = "{0:08b}".format(extra_padding)
-        encoded_text = padded_info + encoded_text
-        
-        # To Bytes
-        b = bytearray()
-        for i in range(0, len(encoded_text), 8):
-            byte = encoded_text[i:i+8]
-            b.append(int(byte, 2))
-            
-        with open(output_path, 'wb') as f:
-            f.write(bytes(b))
-            
-        return True, f"Compressed using Python Logic.\nOriginal: {len(text)} chars\nCompressed: {len(b)} bytes"
     except Exception as e:
         return False, str(e)
 
@@ -218,11 +195,22 @@ def run_cpp_backend(filename, mode, input_path):
             stderr_text = result.stderr.decode('utf-8', errors='replace') if result.stderr else ""
 
             if result.returncode == 0:
+                # Capture real file sizes from disk
+                orig_size = os.path.getsize(input_path)
+                comp_size = os.path.getsize(output_path)
+                ratio = round((1.0 - (comp_size / orig_size)) * 100, 2) if orig_size > 0 else 0
+
                 response_data = {
                     'message': 'Success (C++ Backend)',
                     'download_url': f'/download/{output_filename}',
-                    'console_output': stdout_text
+                    'console_output': stdout_text,
+                    'stats': {
+                        'original': orig_size,
+                        'compressed': comp_size,
+                        'ratio': ratio
+                    }
                 }
+
                 
                 # Check for likely compressed file types
                 lower_name = filename.lower()
@@ -242,13 +230,19 @@ def run_cpp_backend(filename, mode, input_path):
 
     # 2. Fallback to Python (Only for Compression Demo)
     if mode == 'compress':
-        success, msg = python_compress(input_path, output_path)
+        success, data = python_compress(input_path, output_path)
         if success:
             return True, {
                 'message': 'Success (Python Fallback)',
                 'download_url': f'/download/{output_filename}',
-                'console_output': "WARNING: C++ Compiler not found or main.exe invalid.\nUsed Python Fallback for demonstration.\n\n" + msg
+                'console_output': data['msg'],
+                'stats': {
+                    'original': data['original_size'],
+                    'compressed': data['compressed_size'],
+                    'ratio': data['ratio']
+                }
             }
+
         else:
             return False, {'error': 'Python Fallback Failed', 'details': msg}
     
