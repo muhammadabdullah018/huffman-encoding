@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python3", "gcc"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["g++ main.cpp -o main"]
+
+[start]
+cmd = "gunicorn app:app"

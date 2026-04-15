@@ -13,7 +13,12 @@ app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
-EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
+# Cross-platform EXE Path
+if sys.platform.startswith('win'):
+    EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
+else:
+    EXE_PATH = os.path.join(BASE_DIR, 'main')
+
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
@@ -256,4 +261,7 @@ def download_file(filename):
         return str(e), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Use PORT from environment (Railway) or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
