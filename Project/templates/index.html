@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Zipper | Next-Gen Compression</title>
+    
+    <!-- Fonts: Space Grotesk (Headings) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="noise-overlay"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav">
+        <div class="nav-logo">
+            <i class="fa-solid fa-bolt-lightning"></i>
+            <span>ZIPPER</span>
+        </div>
+        <a href="/queue-view" class="nav-link">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Queue</span>
+        </a>
+    </nav>
+
+    <div class="container">
+        <header class="hero">
+            <h1 class="hero-title">Lossless<br><span class="gradient-text">Compression</span></h1>
+            <p class="hero-subtitle">High-efficiency Huffman coding algorithm for the modern web.</p>
+        </header>
+
+        <main>
+            <div class="glass-card">
+                <div class="tabs-container">
+                    <div class="tabs-glider"></div>
+                    <button class="tab active" onclick="setMode('compress')" id="tab-compress">
+                        <i class="fa-solid fa-file-zipper"></i> Compress
+                    </button>
+                    <button class="tab" onclick="setMode('decompress')" id="tab-decompress">
+                        <i class="fa-solid fa-file-arrow-up"></i> Decompress
+                    </button>
+                </div>
+
+                <div class="upload-zone" id="drop-zone">
+                    <input type="file" id="file-input" hidden>
+                    <div class="upload-content">
+                        <div class="icon-wrapper">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <h3>Drop file to upload</h3>
+                        <p class="upload-hint">or click to browse</p>
+                        <p class="file-name" id="file-name"></p>
+                    </div>
+                </div>
+
+                <div class="action-area">
+                    <button class="btn-primary" id="process-btn" disabled onclick="processFile()">
+                        <span>Start Compression</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="status-panel" id="status-container" style="display: none;">
+                    
+                    <!-- Loader -->
+                    <div class="loader-wrapper" id="loader">
+                        <div class="spinner"></div>
+                        <p>Processing...</p>
+                    </div>
+
+                    <!-- Success State -->
+                    <div class="result-box" id="result-content" style="display: none;">
+                        <div class="success-header">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <h4 id="success-msg">Done!</h4>
+                        </div>
+                        
+                        <div id="warning-msg" class="warning-box" style="display: none;"></div>
+                        
+                        <div class="stats-terminal" id="stats-output"></div>
+                        
+                        <a href="#" id="download-link" class="btn-download">
+                            <span>Download File</span>
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                    </div>
+
+                    <!-- Error State -->
+                    <div class="error-box" id="error-content" style="display: none;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p id="error-msg">Something went wrong.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="tech-stack">
+                <span>C++ Core</span>
+                <span class="divider">•</span>
+                <span>Huffman Algo</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

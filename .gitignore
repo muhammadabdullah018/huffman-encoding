@@ -1,0 +1,24 @@
+# Visual Studio
+.vs/
+
+# Build artifacts (C++)
+*.exe
+*.obj
+*.o
+
+# Runtime data (Uploads and Outputs)
+Project/uploads/*
+!Project/uploads/.gitkeep
+Project/outputs/*
+!Project/outputs/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+env/
+
+# OS files
+Thumbs.db
+.DS_Store

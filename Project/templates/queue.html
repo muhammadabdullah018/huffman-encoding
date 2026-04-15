@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priority Queue | File Zipper</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .queue-container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* Specific overrides for queue view */
+        .queue-header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .structure-info {
+            background: rgba(124, 58, 137, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            color: #d8b4fe;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            align-items: flex-start;
+        }
+
+        .queue-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .queue-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+
+        .item-info h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+
+        .priority-badge {
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+            color: var(--text-muted);
+        }
+
+        .item-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem;
+            border: 1px dashed var(--border-glass);
+            border-radius: 12px;
+        }
+
+        /* Specific modifications to new components for this view */
+        .btn-mini {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="noise-overlay"></div>
+    </div>
+
+    <nav class="glass-nav">
+        <div class="nav-logo">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>QUEUE MANAGER</span>
+        </div>
+        <a href="/" class="nav-link">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Home</span>
+        </a>
+    </nav>
+
+    <div class="container queue-container">
+        <!-- Info Banner -->
+        <div class="structure-info">
+            <i class="fa-solid fa-circle-info" style="margin-top: 2px;"></i>
+            <div>
+                <strong style="color: var(--text-main);">Min-Heap Priority Queue</strong><br>
+                Files are processed based on size (Shortest Job First). Smallest files get highest priority.
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <!-- Add New Job Section -->
+            <div class="queue-header-box">
+                <h2 style="font-family: 'Space Grotesk';">Add Job</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="tab active" id="mode-compress" onclick="selectMode('compress')">Compress</button>
+                    <button class="tab" id="mode-decompress" onclick="selectMode('decompress')">Decompress</button>
+                </div>
+            </div>
+
+            <div class="upload-zone" style="padding: 2rem; margin-bottom: 2rem;"
+                onclick="document.getElementById('queue-file-input').click()">
+                <input type="file" id="queue-file-input" style="display: none;" multiple>
+                <div class="icon-wrapper" style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+                    <i class="fa-solid fa-plus-circle"></i>
+                </div>
+                <h3>Click to add files to queue</h3>
+            </div>
+
+            <!-- Queue List -->
+            <div class="queue-header-box"
+                style="margin-bottom: 1rem; border-top: 1px solid var(--border-glass); padding-top: 1.5rem;">
+                <h3 style="font-family: 'Space Grotesk';"><i class="fa-solid fa-list"></i> Current Queue</h3>
+                <button class="btn-primary btn-mini" onclick="processNext()" style="width: auto;">
+                    <i class="fa-solid fa-play"></i> Process Next
+                </button>
+            </div>
+
+            <div id="queue-list">
+                <!-- Items injected here -->
+            </div>
+
+            <!-- Result Area -->
+            <div id="processing-result" class="result-box"
+                style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <div class="success-header">
+                    <i class="fa-solid fa-check"></i>
+                    <h4>Processed: <span id="processed-name"></span></h4>
+                </div>
+                <div class="stats-terminal" id="console-out">Waiting for output...</div>
+                <a href="#" id="download-btn" class="btn-download">
+                    <i class="fa-solid fa-download"></i> Download Result
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'compress';
+
+        function selectMode(mode) {
+            currentMode = mode;
+            // Simplified toggle since we use 'tab' class from style.css
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+        }
+
+        const fileInput = document.getElementById('queue-file-input');
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('mode', currentMode);
+
+                await fetch('/api/queue/add', {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+            updateQueue();
+            fileInput.value = '';
+        });
+
+        async function updateQueue() {
+            try {
+                const res = await fetch('/api/queue/list');
+                const data = await res.json();
+                renderQueue(data.queue);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderQueue(items) {
+            const container = document.getElementById('queue-list');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-box-open" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Queue is empty</p>
+                    </div>`;
+                return;
+            }
+
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'queue-item';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.filename} <span class="priority-badge">#${index + 1}</span></h4>
+                        <div class="item-meta">
+                            <span>${(item.size / 1024).toFixed(1)} KB</span>
+                            <span>${item.mode.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="status">
+                        ${index === 0 ? '<span style="color: var(--primary); font-weight:bold;">NEXT</span>' : '<span style="color: var(--text-muted);">WAITING</span>'}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function processNext() {
+            const btn = document.querySelector('.btn-primary'); // The specific button in this view
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const res = await fetch('/api/queue/process-next', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    const resultDiv = document.getElementById('processing-result');
+                    resultDiv.style.display = 'block';
+                    document.getElementById('processed-name').innerText = data.job.filename;
+
+                    const dlBtn = document.getElementById('download-btn');
+                    dlBtn.href = data.result.download_url;
+
+                    document.getElementById('console-out').innerText = data.result.console_output || "Process Completed.";
+
+                    updateQueue();
+                }
+            } catch (e) {
+                alert("Error processing queue: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Parallax (Re-used for consistency)
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            const orbs = document.querySelectorAll('.orb');
+            orbs.forEach((orb, index) => {
+                const speed = (index + 1) * 20;
+                orb.style.transform = `translate(${(0.5 - x) * speed}px, ${(0.5 - y) * speed}px)`;
+            });
+        });
+
+        // Init
+        updateQueue();
+    </script>
+</body>
+
+</html>
