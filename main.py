@@ -1,7 +1,6 @@
 import os
 import subprocess
 import heapq
-import time
 import sys
 from collections import Counter
 from flask import Flask, render_template, request, send_file, jsonify
@@ -9,251 +8,142 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# Configuration
+# 1. PATH CONFIGURATION
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
 
-# Cross-platform EXE Path
-if sys.platform.startswith('win'):
-    EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
-else:
-    # Most reliable: search current directory first
-    potential_paths = [
-        os.path.join(BASE_DIR, 'huffman_engine'),
-        '/app/huffman_engine',
-        './huffman_engine'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
-# Ensure Directories
+# Ensure Directories Exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-def ensure_engine():
-    """Self-healing: Compile C++ if missing on Linux"""
-    if not sys.platform.startswith('win'):
-        target = os.path.join(BASE_DIR, 'huffman_engine')
-        if not os.path.exists(target):
-            print(f"🚀 Engine missing. Compiling main.cpp into {target}...")
-            try:
-                # Try g++ first
-                subprocess.run(["g++", "main.cpp", "-o", target], check=True)
-                subprocess.run(["chmod", "+x", target], check=True)
-                print("✅ Compilation successful!")
-            except Exception as e:
-                print(f"❌ Auto-compilation failed: {e}")
+# 2. C++ ENGINE LOCATION & COMPILATION
+def get_exe_path():
+    if sys.platform.startswith('win'):
+        return os.path.join(BASE_DIR, 'main.exe')
+    return os.path.join(BASE_DIR, 'huffman_engine')
 
-ensure_engine()
+EXE_PATH = get_exe_path()
 
-# Cross-platform EXE Path
-if sys.platform.startswith('win'):
-    EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
-else:
-    EXE_PATH = os.path.join(BASE_DIR, 'huffman_engine')
+def ensure_engine_exists():
+    """Compiles the C++ engine if it's missing on Linux"""
+    if not sys.platform.startswith('win') and not os.path.exists(EXE_PATH):
+        print(f"🚀 Compiling C++ Backend: {EXE_PATH}...")
+        try:
+            subprocess.run(["g++", "main.cpp", "-o", EXE_PATH], check=True)
+            subprocess.run(["chmod", "+x", EXE_PATH], check=True)
+            print("✅ C++ Engine Ready.")
+        except Exception as e:
+            print(f"❌ Compilation failed: {e}")
 
-# ==========================================
-# PYTHON HUFFMAN FALLBACK (If C++ fails)
-# ==========================================
+# Call on boot
+ensure_engine_exists()
+
+# 3. PYTHON FALLBACKS (Only used if C++ is unreachable)
 class HuffmanNode:
     def __init__(self, char, freq):
-        self.char = char
-        self.freq = freq
-        self.left = None
-        self.right = None
-
+        self.char, self.freq = char, freq
+        self.left = self.right = None
     def __lt__(self, other):
         return self.freq < other.freq
 
-def build_frequency_table(text):
-    return Counter(text)
-
-def build_huffman_tree(freq_table):
-    heap = [HuffmanNode(char, freq) for char, freq in freq_table.items()]
-    heapq.heapify(heap)
-
-    while len(heap) > 1:
-        left = heapq.heappop(heap)
-        right = heapq.heappop(heap)
-        merged = HuffmanNode(None, left.freq + right.freq)
-        merged.left = left
-        merged.right = right
-        heapq.heappush(heap, merged)
-
-    return heap[0] if heap else None
-
-def generate_codes(node, prefix="", codebook={}):
-    if node:
-        if node.char is not None:
-            codebook[node.char] = prefix
-        generate_codes(node.left, prefix + "0", codebook)
-        generate_codes(node.right, prefix + "1", codebook)
-    return codebook
-
 def python_compress(input_path, output_path):
     try:
-        with open(input_path, 'r', encoding='utf-8') as f:
+        with open(input_path, 'r', encoding='utf-8', errors='ignore') as f:
             text = f.read()
+        if not text: return False, "Empty File"
         
-        if not text:
-            return False, "Input file is empty"
-
-        freq_table = build_frequency_table(text)
-        root = build_huffman_tree(freq_table)
-        codes = generate_codes(root)
+        freq = Counter(text)
+        heap = [HuffmanNode(c, f) for c, f in freq.items()]
+        heapq.heapify(heap)
+        while len(heap) > 1:
+            l, r = heapq.heappop(heap), heapq.heappop(heap)
+            m = HuffmanNode(None, l.freq + r.freq)
+            m.left, m.right = l, r
+            heapq.heappush(heap, m)
         
-        encoded_text = "".join(codes[char] for char in text)
+        codes = {}
+        def gen(n, p=""):
+            if n:
+                if n.char is not None: codes[n.char] = p
+                gen(n.left, p+"0"); gen(n.right, p+"1")
+        gen(heap[0] if heap else None)
         
-        # Padding
-        extra_padding = 8 - len(encoded_text) % 8
-        encoded_text += "0" * extra_padding
-        padded_info = "{0:08b}".format(extra_padding)
-        encoded_text = padded_info + encoded_text
-        
-        # To Bytes
-        b = bytearray()
-        for i in range(0, len(encoded_text), 8):
-            byte = encoded_text[i:i+8]
-            b.append(int(byte, 2))
+        bits = "".join(codes[c] for c in text)
+        pad = 8 - len(bits) % 8
+        bits += "0" * pad
+        b = bytearray([pad])
+        for i in range(0, len(bits), 8):
+            b.append(int(bits[i:i+8], 2))
             
-        with open(output_path, 'wb') as f:
-            f.write(bytes(b))
-            
-        return True, {
-            "original_size": len(text),
-            "compressed_size": len(b),
-            "ratio": round((1.0 - (len(b) / len(text))) * 100, 2) if len(text) > 0 else 0,
-            "msg": f"Compressed using Python Logic.\nOriginal: {len(text)} chars\nCompressed: {len(b)} bytes"
-        }
-    except Exception as e:
-        return False, str(e)
+        with open(output_path, 'wb') as f: f.write(b)
+        return True, {"original_size": len(text), "compressed_size": len(b), "ratio": round((1.0-(len(b)/len(text)))*100, 2), "msg": "Python Fallback Active"}
+    except Exception as e: return False, str(e)
 
-def python_decompress(input_path, output_path):
-    # Note: This is valid ONLY for files compressed with the Python method above.
-    return False, "C++ Engine is required for Decompressing files. Please ensure you are uploading a valid .huf file and the C++ engine is compiled."
-
-# ==========================================
-# PRIORITY QUEUE STATE
-# ==========================================
-file_queue = []
-job_counter = 0
-
+# 4. WEB ROUTES
 @app.route('/')
-def index():
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/debug-paths')
 def debug_paths():
-    import os, sys
-    files = sorted(os.listdir('.'))
     return jsonify({
-        'current_dir': os.getcwd(),
-        'base_dir': BASE_DIR,
-        'files_in_root': files,
         'exe_path': EXE_PATH,
-        'exe_exists': os.path.exists(EXE_PATH),
-        'platform': sys.platform
+        'exists': os.path.exists(EXE_PATH),
+        'files': os.listdir('.')
     })
 
 @app.route('/process', methods=['POST'])
-def process_file_direct():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
+def process():
+    file = request.files.get('file')
     mode = request.form.get('mode')
+    if not file: return jsonify({'error': 'No file'}), 400
     
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-        
     filename = secure_filename(file.filename)
     input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(input_path)
     
-    success, result = run_cpp_backend(filename, mode, input_path)
-    if success:
-         return jsonify(result)
-    else:
-         return jsonify(result), 500
-
-def run_cpp_backend(filename, mode, input_path):
-    """Try C++, fallback to Python if needed"""
+    # DETERMINE OUTPUT NAME
     if mode == 'compress':
-        output_filename = filename + '.huf'
+        out_name = filename + ".huf"
     else:
-        if filename.endswith('.huf') or filename.endswith('.bin'):
-            output_filename = filename[:-4]
-        else:
-            output_filename = filename + '.txt'
+        out_name = filename.replace('.huf', '').replace('.bin', '')
+        if out_name == filename: out_name += ".txt"
+        
+    output_path = os.path.join(app.config['OUTPUT_FOLDER'], out_name)
 
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
-    
-    # 1. Try C++ Executable
-    exe_exists = os.path.exists(EXE_PATH)
-    
-    if exe_exists:
+    # EXECUTION LOGIC (C++ First)
+    if os.path.exists(EXE_PATH):
         try:
-            result = subprocess.run([EXE_PATH, mode, input_path, output_path], capture_output=True)
-            
-            stdout_text = result.stdout.decode('utf-8', errors='replace') if result.stdout else ""
-            stderr_text = result.stderr.decode('utf-8', errors='replace') if result.stderr else ""
+            res = subprocess.run([EXE_PATH, mode, input_path, output_path], capture_output=True, text=True)
+            if res.returncode == 0:
+                s1, s2 = os.path.getsize(input_path), os.path.getsize(output_path)
+                return jsonify({
+                    'message': 'Success (C++ Engine)',
+                    'download_url': f'/download/{out_name}',
+                    'stats': {'original': s1, 'compressed': s2, 'ratio': round((1.0-(s2/s1))*100, 2) if s1>0 else 0},
+                    'console_output': res.stdout
+                })
+        except: pass
 
-            if result.returncode == 0:
-                # Capture real file sizes from disk
-                orig_size = os.path.getsize(input_path)
-                comp_size = os.path.getsize(output_path)
-                ratio = round((1.0 - (comp_size / orig_size)) * 100, 2) if orig_size > 0 else 0
-
-                response_data = {
-                    'message': 'Success (C++ Backend)',
-                    'download_url': f'/download/{output_filename}',
-                    'console_output': stdout_text,
-                    'stats': {
-                        'original': orig_size,
-                        'compressed': comp_size,
-                        'ratio': ratio
-                    }
-                }
-
-                # Check for likely compressed file types
-                lower_name = filename.lower()
-                compressed_exts = ['.pdf', '.jpg', '.jpeg', '.png', '.zip', '.rar', '.7z', '.mp4', '.mp3', '.docx']
-                if any(lower_name.endswith(ext) for ext in compressed_exts):
-                     response_data['warning'] = "Note: The uploaded file appears to be already compressed."
-
-                return True, response_data
-            else:
-                  return False, {'error': 'C++ Backend Failed', 'details': stderr_text}
-        except Exception as e:
-             return False, {'error': str(e)}
-
-    # 2. Fallback to Python (Safety Net)
+    # FALLBACK
     if mode == 'compress':
-        success, data = python_compress(input_path, output_path)
-    else:
-        success, data = python_decompress(input_path, output_path)
-
-    if success:
-        return True, {
-            'message': f'Success ({mode.capitalize()} - Python Fallback)',
-            'download_url': f'/download/{output_filename}',
-            'console_output': data.get('msg', 'Process complete.'),
-            'stats': {
-                'original': data.get('original_size', 0),
-                'compressed': data.get('compressed_size', 0),
-                'ratio': data.get('ratio', 0)
-            }
-        }
-    else:
-        return False, {'error': 'Universal Engine Failure', 'details': data}
+        ok, data = python_compress(input_path, output_path)
+        if ok:
+            return jsonify({
+                'message': 'Success (Python Fallback)', 
+                'download_url': f'/download/{out_name}',
+                'stats': {'original': data['original_size'], 'compressed': data['compressed_size'], 'ratio': data['ratio']}
+            })
+    
+    return jsonify({'error': 'Engine Error', 'details': 'C++ engine failed and no Python fallback available for decompression.'}), 500
 
 @app.route('/download/<filename>')
-def download_file(filename):
-    try:
-        return send_file(os.path.join(app.config['OUTPUT_FOLDER'], filename), as_attachment=True)
-    except Exception as e:
-        return str(e), 404
+def download(filename):
+    return send_file(os.path.join(app.config['OUTPUT_FOLDER'], filename), as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)
