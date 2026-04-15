@@ -17,8 +17,15 @@ OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
 if sys.platform.startswith('win'):
     EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
 else:
-    # Force absolute path for Railway/Linux
-    EXE_PATH = '/app/huffman_engine'
+    # Most reliable: search current directory first
+    potential_paths = [
+        os.path.join(BASE_DIR, 'huffman_engine'),
+        '/app/huffman_engine',
+        './huffman_engine'
+    ]
+    EXE_PATH = next((p for p in potential_paths if os.path.exists(p)), potential_paths[0])
+
+
 
 
 
@@ -258,25 +265,27 @@ def run_cpp_backend(filename, mode, input_path):
              else:
                  return False, {'error': str(e)}
 
-    # 2. Fallback to Python (Only for Compression Demo)
+    # 2. Fallback to Python (Safety Net)
     if mode == 'compress':
         success, data = python_compress(input_path, output_path)
-        if success:
-            return True, {
-                'message': 'Success (Python Fallback)',
-                'download_url': f'/download/{output_filename}',
-                'console_output': data['msg'],
-                'stats': {
-                    'original': data['original_size'],
-                    'compressed': data['compressed_size'],
-                    'ratio': data['ratio']
-                }
-            }
+    else:
+        # We try to run the C++ format via Python (Note: Python can only decompress its own format)
+        success, data = python_decompress(input_path, output_path)
 
-        else:
-            return False, {'error': 'Python Fallback Failed', 'details': msg}
-    
-    return False, {'error': f'Core Engine handle failed. Executable not found at {EXE_PATH}. Please ensure compilation succeeded.'}
+    if success:
+        return True, {
+            'message': f'Success ({mode.capitalize()} - Python Fallback)',
+            'download_url': f'/download/{output_filename}',
+            'console_output': data.get('msg', 'Process complete.'),
+            'stats': {
+                'original': data.get('original_size', 0),
+                'compressed': data.get('compressed_size', 0),
+                'ratio': data.get('ratio', 0)
+            }
+        }
+    else:
+        return False, {'error': 'Universal Engine Failure', 'details': f'C++ was missing and Python fallback failed: {data}'}
+
 
 
 @app.route('/download/<filename>')
