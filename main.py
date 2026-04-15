@@ -13,6 +13,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
+
 # Cross-platform EXE Path
 if sys.platform.startswith('win'):
     EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
@@ -24,9 +25,6 @@ else:
         './huffman_engine'
     ]
     EXE_PATH = next((p for p in potential_paths if os.path.exists(p)), potential_paths[0])
-
-
-
 
 
 
@@ -74,6 +72,7 @@ def generate_codes(node, prefix="", codebook={}):
         generate_codes(node.left, prefix + "0", codebook)
         generate_codes(node.right, prefix + "1", codebook)
     return codebook
+
 def python_compress(input_path, output_path):
     try:
         with open(input_path, 'r', encoding='utf-8') as f:
@@ -112,12 +111,9 @@ def python_compress(input_path, output_path):
     except Exception as e:
         return False, str(e)
 
-
 def python_decompress(input_path, output_path):
     # Note: This is valid ONLY for files compressed with the Python method above.
-    # It will fail for the C++ format as the metadata structure differs.
-    # This is a fallback demo.
-    return False, "Python-based decompression is not fully compatible with the C++ binary format. Please compile the C++ backend for full features."
+    return False, "C++ Engine is required for Decompressing files. Please ensure you are uploading a valid .huf file and the C++ engine is compiled."
 
 # ==========================================
 # PRIORITY QUEUE STATE
@@ -129,9 +125,18 @@ job_counter = 0
 def index():
     return render_template('index.html')
 
-@app.route('/queue-view')
-def queue_view():
-    return render_template('queue.html')
+@app.route('/debug-paths')
+def debug_paths():
+    import os, sys
+    files = sorted(os.listdir('.'))
+    return jsonify({
+        'current_dir': os.getcwd(),
+        'base_dir': BASE_DIR,
+        'files_in_root': files,
+        'exe_path': EXE_PATH,
+        'exe_exists': os.path.exists(EXE_PATH),
+        'platform': sys.platform
+    })
 
 @app.route('/process', methods=['POST'])
 def process_file_direct():
@@ -154,61 +159,6 @@ def process_file_direct():
     else:
          return jsonify(result), 500
 
-# ==========================================
-# QUEUE API METHODS
-# ==========================================
-@app.route('/api/queue/add', methods=['POST'])
-def add_to_queue():
-    global job_counter
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    mode = request.form.get('mode', 'compress')
-    
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    filename = secure_filename(file.filename)
-    input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(input_path)
-    
-    file_size = os.path.getsize(input_path)
-    
-    job_metadata = {
-        'id': job_counter,
-        'filename': filename,
-        'mode': mode,
-        'size': file_size,
-        'input_path': input_path,
-        'status': 'queued'
-    }
-    
-    heapq.heappush(file_queue, (file_size, job_counter, job_metadata))
-    job_counter += 1
-    
-    return jsonify({'message': 'Added to queue', 'job': job_metadata})
-
-@app.route('/api/queue/list', methods=['GET'])
-def get_queue_list():
-    sorted_jobs = sorted(file_queue, key=lambda x: (x[0], x[1]))
-    jobs = [item[2] for item in sorted_jobs]
-    return jsonify({'queue': jobs, 'count': len(jobs)})
-
-@app.route('/api/queue/process-next', methods=['POST'])
-def process_next_in_queue():
-    if not file_queue:
-        return jsonify({'error': 'Queue is empty'}), 400
-    
-    priority, _, job_data = heapq.heappop(file_queue)
-    success, result = run_cpp_backend(job_data['filename'], job_data['mode'], job_data['input_path'])
-    
-    return jsonify({
-        'job': job_data,
-        'result': result,
-        'success': success
-    })
-
 def run_cpp_backend(filename, mode, input_path):
     """Try C++, fallback to Python if needed"""
     if mode == 'compress':
@@ -222,7 +172,7 @@ def run_cpp_backend(filename, mode, input_path):
     output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
     
     # 1. Try C++ Executable
-    exe_exists = os.path.exists(EXE_PATH) and os.path.getsize(EXE_PATH) > 0
+    exe_exists = os.path.exists(EXE_PATH)
     
     if exe_exists:
         try:
@@ -248,28 +198,22 @@ def run_cpp_backend(filename, mode, input_path):
                     }
                 }
 
-                
                 # Check for likely compressed file types
                 lower_name = filename.lower()
                 compressed_exts = ['.pdf', '.jpg', '.jpeg', '.png', '.zip', '.rar', '.7z', '.mp4', '.mp3', '.docx']
                 if any(lower_name.endswith(ext) for ext in compressed_exts):
-                     response_data['warning'] = "Note: The uploaded file appears to be already compressed (e.g. PDF, Image). Huffman coding relies on character redundancy, which is low in these files. Resulting size may be similar or slightly larger due to metadata overhead."
+                     response_data['warning'] = "Note: The uploaded file appears to be already compressed."
 
                 return True, response_data
             else:
-                 # If C++ fails, we might fall back or report error
-                 return False, {'error': 'C++ Backend Failed', 'details': stderr_text}
-        except OSError as e:
-             if e.winerror == 193:
-                 print("Invalid Executable. Switching to Fallback.")
-             else:
-                 return False, {'error': str(e)}
+                  return False, {'error': 'C++ Backend Failed', 'details': stderr_text}
+        except Exception as e:
+             return False, {'error': str(e)}
 
     # 2. Fallback to Python (Safety Net)
     if mode == 'compress':
         success, data = python_compress(input_path, output_path)
     else:
-        # We try to run the C++ format via Python (Note: Python can only decompress its own format)
         success, data = python_decompress(input_path, output_path)
 
     if success:
@@ -284,9 +228,7 @@ def run_cpp_backend(filename, mode, input_path):
             }
         }
     else:
-        return False, {'error': 'Universal Engine Failure', 'details': f'C++ was missing and Python fallback failed: {data}'}
-
-
+        return False, {'error': 'Universal Engine Failure', 'details': data}
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -296,7 +238,5 @@ def download_file(filename):
         return str(e), 404
 
 if __name__ == '__main__':
-    # Use PORT from environment (Railway) or default to 5000
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
