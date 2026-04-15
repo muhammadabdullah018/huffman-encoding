@@ -65,16 +65,44 @@ def generate_codes(node, prefix="", codebook={}):
         generate_codes(node.left, prefix + "0", codebook)
         generate_codes(node.right, prefix + "1", codebook)
     return codebook
+def python_compress(input_path, output_path):
+    try:
+        with open(input_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        
+        if not text:
+            return False, "Input file is empty"
 
+        freq_table = build_frequency_table(text)
+        root = build_huffman_tree(freq_table)
+        codes = generate_codes(root)
+        
+        encoded_text = "".join(codes[char] for char in text)
+        
+        # Padding
+        extra_padding = 8 - len(encoded_text) % 8
+        encoded_text += "0" * extra_padding
+        padded_info = "{0:08b}".format(extra_padding)
+        encoded_text = padded_info + encoded_text
+        
+        # To Bytes
+        b = bytearray()
+        for i in range(0, len(encoded_text), 8):
+            byte = encoded_text[i:i+8]
+            b.append(int(byte, 2))
+            
+        with open(output_path, 'wb') as f:
+            f.write(bytes(b))
+            
         return True, {
             "original_size": len(text),
             "compressed_size": len(b),
             "ratio": round((1.0 - (len(b) / len(text))) * 100, 2) if len(text) > 0 else 0,
             "msg": f"Compressed using Python Logic.\nOriginal: {len(text)} chars\nCompressed: {len(b)} bytes"
         }
-
     except Exception as e:
         return False, str(e)
+
 
 def python_decompress(input_path, output_path):
     # Note: This is valid ONLY for files compressed with the Python method above.
