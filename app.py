@@ -17,7 +17,8 @@ OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
 if sys.platform.startswith('win'):
     EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
 else:
-    EXE_PATH = os.path.join(BASE_DIR, 'main')
+    EXE_PATH = os.path.join(BASE_DIR, 'huffman_engine')
+
 
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
