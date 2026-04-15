@@ -88,22 +88,46 @@
                         <p>Processing...</p>
                     </div>
 
-                    <!-- Success State -->
+                    <!-- Success State (Executive Dashboard) -->
                     <div class="result-box" id="result-content" style="display: none;">
                         <div class="success-header">
-                            <i class="fa-solid fa-circle-check"></i>
-                            <h4 id="success-msg">Done!</h4>
+                            <div class="success-icon">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                            <div class="success-info">
+                                <h4 id="success-msg">Process Complete</h4>
+                                <p>File is ready for download</p>
+                            </div>
+                        </div>
+                        
+                        <!-- NEW: Professional Stats Board -->
+                        <div class="stats-dashboard">
+                            <div class="stat-card">
+                                <span class="stat-label">Original</span>
+                                <span class="stat-value" id="stat-original">0 KB</span>
+                            </div>
+                            <div class="stat-arrow">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                            <div class="stat-card highlighted">
+                                <span class="stat-label">Result</span>
+                                <span class="stat-value" id="stat-compressed">0 KB</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-card saving">
+                                <span class="stat-label">Efficiency</span>
+                                <span class="stat-value" id="stat-savings">0%</span>
+                            </div>
                         </div>
                         
                         <div id="warning-msg" class="warning-box" style="display: none;"></div>
                         
-                        <div class="stats-terminal" id="stats-output"></div>
-                        
                         <a href="#" id="download-link" class="btn-download">
-                            <span>Download File</span>
                             <i class="fa-solid fa-download"></i>
+                            <span>Download Processed File</span>
                         </a>
                     </div>
+
 
                     <!-- Error State -->
                     <div class="error-box" id="error-content" style="display: none;">

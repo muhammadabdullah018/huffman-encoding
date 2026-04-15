@@ -390,45 +390,88 @@ body {
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* Result Box */
-.result-box {
-    animation: slideUp 0.4s var(--ease-squish);
+/* Professional Dashboard */
+.stats-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
 }
 
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.stat-arrow {
+    color: var(--border-glass);
+    font-size: 0.8rem;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border-glass);
+}
+
+.stat-card.highlighted .stat-value {
+    color: var(--primary);
+}
+
+.stat-card.saving .stat-value {
+    color: #4ade80; /* Green for success metric */
+}
+
+/* Success Header */
 .success-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--success);
-    margin-bottom: 1rem;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
-.success-header i { font-size: 1.5rem; }
-.success-header h4 { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; }
+.success-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.2rem;
+    box-shadow: 0 10px 20px var(--primary-glow);
+}
 
-.warning-box {
-    background: rgba(234, 179, 8, 0.1);
-    border: 1px solid rgba(234, 179, 8, 0.2);
-    color: #fca5a5; /* Actually using red-ish for high contrast warning text or keep varied */
-    color: #eab308;
-    padding: 10px;
-    border-radius: 8px;
+.success-info h4 {
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+}
+
+.success-info p {
     font-size: 0.85rem;
-    margin-bottom: 1rem;
+    color: var(--text-muted);
 }
 
-.stats-terminal {
-    background: #000;
-    border: 1px solid #222;
-    padding: 12px;
-    border-radius: 8px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    color: #0f0;
-    margin-bottom: 1rem;
-    max-height: 120px;
-    overflow-y: auto;
-}
 
 .btn-download {
     display: flex;

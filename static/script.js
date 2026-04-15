@@ -91,8 +91,19 @@ async function processFile() {
 
         if (response.ok) {
             resultContent.style.display = 'block';
-            successMsg.innerText = currentMode === 'compress' ? '🎉 Shrink Successful!' : '🎉 Restore Successful!';
+            successMsg.innerText = currentMode === 'compress' ? 'Shrink Successful' : 'Restore Successful';
 
+            // Parse Stats from Console Output
+            if (data.console_output) {
+                const output = data.console_output;
+                const originalMatch = output.match(/Original Size:\s+(\d+)/);
+                const compressedMatch = output.match(/Compressed Size:\s+(\d+)/);
+                const ratioMatch = output.match(/Compression Ratio:\s+([\d.]+)%/);
+
+                if (originalMatch) document.getElementById('stat-original').innerText = formatBytes(originalMatch[1]);
+                if (compressedMatch) document.getElementById('stat-compressed').innerText = formatBytes(compressedMatch[1]);
+                if (ratioMatch) document.getElementById('stat-savings').innerText = ratioMatch[1] + '%';
+            }
 
             const warningEl = document.getElementById('warning-msg');
             if (data.warning) {
@@ -103,9 +114,8 @@ async function processFile() {
             }
 
             downloadLink.href = data.download_url;
-            // Clean up the console output for display
-            statsOutput.innerText = data.console_output || 'Process complete.';
         } else {
+
             errorContent.style.display = 'block';
             errorMsg.innerText = data.error || 'Unknown error occurred.';
         }
