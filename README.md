@@ -1,4 +1,4 @@
-# ⚡ HUFFMAN PROJECT ZIPPER ⚡
+# HUFFMAN PROJECT ZIPPER
 
 ```text
   _   _ _   _ _____ _____ __  __     _    _   _ 
@@ -14,131 +14,94 @@
  \____\___/|____/|_____| |_| \_\_____|____/ 
 ```
 
-> **A high-performance file compression engine featuring a C++ backend and a modern Flask web interface.**
+### 🔗 [Live Demo: Huffman Engine on Railway](https://huffman-encoding-production.up.railway.app)
 
 ---
 
-## 🚀 Overview
+## 🚀 Project Overview
 
-The **Huffman Project Zipper** is a full-stack compression utility built around one of computer science's most elegant algorithms. It leverages the raw efficiency of **Huffman Coding** implemented in **C++20** for the heavy lifting, while wrapping everything in a clean, user-friendly interface powered by **Python/Flask**.
+The **Huffman Project Zipper** is a full-stack, lossless compression utility. It bridges high-performance systems programming with a modern web interface to demonstrate the power of the **Huffman Coding Algorithm**. 
 
-No data is lost. No quality is sacrificed. Just pure, lossless compression — fast.
-
----
-
-## ✨ Key Features
-
-| Feature | Description |
-|---|---|
-| 🛡️ **Lossless Compression** | 100% data integrity guaranteed via Huffman Coding |
-| ⚡ **Hybrid Architecture** | C++ speed meets Python flexibility |
-| 🎨 **Modern UI** | Clean Red, White & Black dashboard |
-| 📂 **Multi-file Support** | Handles `.txt`, `.pdf`, `.json`, and more |
-| 🔄 **Two-way Processing** | Seamlessly compress and decompress files |
+Built for speed and precision, the core engine handles binary file manipulation via **C++20**, while the **Python/Flask** orchestration layer provides a seamless, interactive user experience.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technical Architecture
 
+### Core Engine
+- **Language**: C++20
+- **Algorithm**: Greedy Huffman Coding (Min-Heap Implementation)
+- **Time Complexity**: O(n log n) for building, O(m log n) for encoding/decoding
+- **Space Complexity**: O(n) for the frequency table and tree nodes
+
+### Web Layer
+- **Backend**: Python 3.10+ / Flask / Gunicorn
+- **Frontend**: HTML5 / CSS3 / Vanilla JavaScript
+- **Deployment**: containerized via Railway (Nixpacks)
+
+---
+
+## 📦 Local Setup & Installation
+
+### 1. Compile the Backend
+The C++ logic must be compiled into a binary before the web server starts.
+
+**Windows:**
+```powershell
+g++ main.cpp -o main.exe
 ```
-C++20          [████████████████████] 100%  — Core compression logic
-Python / Flask [██████████████░░░░░░]  70%  — Web server & API layer
-HTML5 / CSS3   [██████████░░░░░░░░░░]  50%  — Frontend interface
-```
 
----
-
-## 📦 Installation & Setup
-
-### Prerequisites
-- **G++ compiler** (C++20 support required)
-- **Python 3.8+**
-- **pip**
-
----
-
-### Step 1 — Compile the C++ Engine
-
-The C++ backend must be compiled into `main.exe` before the app can run.
-
+**Linux / macOS:**
 ```bash
-g++ Project/main.cpp -o Project/main.exe
+g++ main.cpp -o huffman_engine
 ```
 
-> ⚠️ **Note:** If you're on Linux/macOS, output to `main` (no `.exe`) and update the path reference in `app.py` accordingly.
-
----
-
-### Step 2 — Set Up Python Environment
-
-Install the required web dependencies:
-
+### 2. Environment Setup
+Install the necessary Python dependencies:
 ```bash
-pip install flask
+pip install -r requirements.txt
 ```
 
----
-
-### Step 3 — Launch the Application
-
+### 3. Execution
+Start the local server:
 ```bash
-python Project/app.py
+python main.py
 ```
-
-📍 Open your browser and navigate to: `http://127.0.0.1:5000`
 
 ---
 
-## 📂 Directory Structure
+## 📂 Repository Structure
 
-```
+```text
 .
-├── Project/
-│   ├── static/          # CSS, JS, and image assets
-│   ├── templates/       # HTML layout files (Jinja2)
-│   ├── uploads/         # Temporary user uploads  ← git ignored
-│   ├── outputs/         # Compressed/decompressed results  ← git ignored
-│   ├── app.py           # Flask web server
-│   └── main.cpp         # Huffman coding engine (C++20)
-├── .gitignore           # Git exclusion rules
-└── README.md            # You're reading it
+├── static/              # CSS, JS, and global UI assets
+├── templates/           # HTML layout structures
+├── uploads/             # Volatile storage for user input (ignored by git)
+├── outputs/             # Volatile storage for processed results (ignored by git)
+├── main.py              # Flask server and platform-agnostic bridge
+├── main.cpp             # Core C++ Huffman logic
+├── nixpacks.toml        # Railway build configuration
+├── Procfile             # Process manager instructions
+└── README.md            # Technical documentation
 ```
 
-> 📌 `uploads/` and `outputs/` are intentionally excluded from version control — they hold runtime-generated files only.
-
 ---
 
-## 🧠 How Huffman Coding Works
+## 📖 Huffman Algorithm Summary
 
-Huffman Coding is a **greedy algorithm** that assigns shorter binary codes to more frequently occurring characters, and longer codes to rarer ones. The result:
+Huffman Coding is a prefix-free encoding method that achieves compression by assigning variable-length codes specifically to characters based on their frequency.
 
-1. **Frequency analysis** — count how often each character appears
-2. **Priority queue** — build a min-heap of character frequencies
-3. **Tree construction** — merge the two lowest-frequency nodes repeatedly
-4. **Code generation** — traverse the tree to assign binary codes
-5. **Encoding** — replace each character with its binary code
-
-The encoded output is always smaller than or equal to the original for any real-world input.
-
----
-
-## ⚙️ Usage
-
-1. Open the web interface at `http://127.0.0.1:5000`
-2. Upload a file (`.txt`, `.pdf`, `.json`, etc.)
-3. Choose **Compress** or **Decompress**
-4. Download your processed file from the outputs panel
+1.  **Frequency Analysis**: Maps characters to their occurrence counts.
+2.  **Tree Building**: Uses a priority queue to iteratively merge the two least-frequent nodes into a binary tree.
+3.  **Bit-mapping**: Traverses the resulting tree to generate optimal binary strings for each character.
+4.  **Bit-streaming**: Replaces the source data with the binary maps and records the total bit length for lossless restoration.
 
 ---
 
 ## 👤 Author
 
 **Muhammad Abdullah Mushtaq**  
-Data Structures & Algorithms — 3rd Semester  
-April 2026
+Data Structures & Algorithms — Semester 3  
+University Project, April 2026
 
 ---
-
-## 📄 License
-
-This project was developed for academic purposes. All rights reserved.
