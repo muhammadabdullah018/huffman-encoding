@@ -29,57 +29,74 @@ def compile_on_boot():
 
 compile_on_boot()
 
-# POWERFUL PYTHON DECODER (100% COMPATIBLE WITH C++)
+# PYTHON DECODER — mirrors C++ tree construction exactly
+# Node layout: [frequency, seq_id, char_or_None, left_child, right_child]
+# seq_id breaks frequency ties deterministically (matches C++ id field).
+# Chars sorted by unsigned byte value before insertion — same as C++ encoder.
 def safe_decompress(input_path, output_path):
     try:
         with open(input_path, 'rb') as f:
-            # 1. Read Table Size (size_t = 8 bytes on Railway)
-            raw_table_size = f.read(8)
-            if not raw_table_size: return False, "Invalid Header"
-            table_size = struct.unpack('Q', raw_table_size)[0]
-            
-            # 2. Read Freq Table
+            raw = f.read(8)
+            if not raw or len(raw) < 8:
+                return False, "Invalid Header"
+            table_size = struct.unpack('<Q', raw)[0]
+
             freq = {}
             for _ in range(table_size):
-                char = f.read(1).decode('latin-1')
-                count = struct.unpack('I', f.read(4))[0]
-                freq[char] = count
-            
-            # 3. Read Total Bits (size_t = 8 bytes)
-            total_bits = struct.unpack('Q', f.read(8))[0]
-            
-            # 4. Build Tree
+                char_byte = f.read(1)
+                count_bytes = f.read(4)
+                if not char_byte or len(count_bytes) < 4:
+                    return False, "Truncated frequency table"
+                freq[char_byte.decode('latin-1')] = struct.unpack('<I', count_bytes)[0]
+
+            bits_raw = f.read(8)
+            if not bits_raw or len(bits_raw) < 8:
+                return False, "Missing bit count"
+            total_bits = struct.unpack('<Q', bits_raw)[0]
+
+            # Sort by unsigned byte value — matches C++ sort((unsigned char)a < (unsigned char)b)
+            seq = 0
             heap = []
-            for chars, counts in freq.items():
-                node = [counts, chars, None, None]
-                heapq.heappush(heap, node)
-            
+            for char, count in sorted(freq.items(), key=lambda x: ord(x[0])):
+                heapq.heappush(heap, [count, seq, char, None, None])
+                seq += 1
+
             while len(heap) > 1:
                 lo = heapq.heappop(heap)
                 hi = heapq.heappop(heap)
-                merged = [lo[0] + hi[0], None, lo, hi]
-                heapq.heappush(heap, merged)
-            
+                heapq.heappush(heap, [lo[0] + hi[0], seq, None, lo, hi])
+                seq += 1
+
+            if not heap:
+                return False, "Empty frequency table"
+
             root = heap[0]
-            
-            # 5. Decode
+            # [freq, id, char, left, right] — char is None for internal nodes
+
             current = root
             decoded = []
             bits_processed = 0
-            
+            single_char = (root[2] is not None)  # root is a leaf (single unique char)
+
             while bits_processed < total_bits:
                 byte = f.read(1)
-                if not byte: break
+                if not byte:
+                    break
                 byte_val = ord(byte)
                 for i in range(8):
-                    if bits_processed >= total_bits: break
+                    if bits_processed >= total_bits:
+                        break
+                    if single_char:
+                        decoded.append(root[2].encode('latin-1'))
+                        bits_processed += 1
+                        continue
                     bit = (byte_val >> (7 - i)) & 1
-                    current = current[2] if bit == 0 else current[3]
-                    if current[1] is not None:
-                        decoded.append(current[1].encode('latin-1'))
+                    current = current[3] if bit == 0 else current[4]
+                    if current[2] is not None:  # leaf
+                        decoded.append(current[2].encode('latin-1'))
                         current = root
                     bits_processed += 1
-            
+
             with open(output_path, 'wb') as out:
                 out.write(b"".join(decoded))
             return True, {"original_size": 0, "compressed_size": 0, "ratio": 0, "msg": "Restored via Safety Engine"}

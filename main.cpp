@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bitset>
 #include <fstream>
 #include <iomanip>
@@ -6,6 +7,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -22,15 +24,16 @@ using namespace std;
 struct HuffmanNode {
   char data;
   unsigned frequency;
+  int id; // creation order — used as deterministic tie-breaker
   shared_ptr<HuffmanNode> left, right;
 
-  HuffmanNode(char data, unsigned freq)
-      : data(data), frequency(freq), left(nullptr), right(nullptr) {}
+  HuffmanNode(char data, unsigned freq, int id)
+      : data(data), frequency(freq), id(id), left(nullptr), right(nullptr) {}
 
   // Constructor for internal nodes (no character)
-  HuffmanNode(unsigned freq, shared_ptr<HuffmanNode> l,
+  HuffmanNode(unsigned freq, int id, shared_ptr<HuffmanNode> l,
               shared_ptr<HuffmanNode> r)
-      : data('\0'), frequency(freq), left(l), right(r) {}
+      : data('\0'), frequency(freq), id(id), left(l), right(r) {}
 };
 
 // COMPARATOR FOR MIN-HEAP
@@ -42,7 +45,8 @@ struct HuffmanNode {
 struct CompareNode {
   bool operator()(shared_ptr<HuffmanNode> const &a,
                   shared_ptr<HuffmanNode> const &b) {
-    return a->frequency > b->frequency;
+    if (a->frequency != b->frequency) return a->frequency > b->frequency;
+    return a->id > b->id; // earlier-created node wins ties
   }
 };
 
@@ -92,38 +96,40 @@ public:
                    CompareNode>
         minHeap;
 
-    // Create leaf node for each character
-    // Time: O(n log n) for n insertions
-    for (const auto &pair : freqTable) {
-      minHeap.push(make_shared<HuffmanNode>(pair.first, pair.second));
+    // Sort entries by unsigned char value so insertion order is identical
+    // in both encoder and decoder — guarantees the same tree is built.
+    vector<pair<char, unsigned>> entries(freqTable.begin(), freqTable.end());
+    sort(entries.begin(), entries.end(), [](const pair<char, unsigned> &a,
+                                           const pair<char, unsigned> &b) {
+      return (unsigned char)a.first < (unsigned char)b.first;
+    });
+
+    int seq = 0;
+    for (const auto &pair : entries) {
+      minHeap.push(make_shared<HuffmanNode>(pair.first, pair.second, seq++));
     }
 
     // Special case: single unique character
     if (minHeap.size() == 1) {
       auto node = minHeap.top();
-      root = make_shared<HuffmanNode>(node->frequency, node, nullptr);
+      root = make_shared<HuffmanNode>(node->frequency, seq++, node, nullptr);
       generateCodes(root, "");
       return;
     }
 
     // Greedy algorithm: repeatedly merge two minimum frequency nodes
-    // Time: O(n log n) - n-1 iterations, each with 2 extractions and 1
-    // insertion
     while (minHeap.size() > 1) {
       auto left = minHeap.top();
       minHeap.pop();
       auto right = minHeap.top();
       minHeap.pop();
 
-      // Create internal node with combined frequency
       auto parent = make_shared<HuffmanNode>(left->frequency + right->frequency,
-                                             left, right);
+                                             seq++, left, right);
       minHeap.push(parent);
     }
 
     root = minHeap.top();
-
-    // Generate codes using DFS
     generateCodes(root, "");
   }
 
