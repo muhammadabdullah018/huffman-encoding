@@ -100,8 +100,6 @@ Huffman Coding is a prefix-free encoding method that achieves compression by ass
 
 ## 👤 Author
 
-**Muhammad Abdullah Mushtaq**  
-Data Structures & Algorithms — Semester 3  
-University Project, April 2026
+**Muhammad Abdullah Mushtaq**  | April 2026
 
 ---
