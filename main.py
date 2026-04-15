@@ -23,17 +23,34 @@ else:
         os.path.join(BASE_DIR, 'huffman_engine'),
         '/app/huffman_engine',
         './huffman_engine'
-    ]
-    EXE_PATH = next((p for p in potential_paths if os.path.exists(p)), potential_paths[0])
-
-
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
-# Ensure directories exist
+# Ensure Directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+def ensure_engine():
+    """Self-healing: Compile C++ if missing on Linux"""
+    if not sys.platform.startswith('win'):
+        target = os.path.join(BASE_DIR, 'huffman_engine')
+        if not os.path.exists(target):
+            print(f"🚀 Engine missing. Compiling main.cpp into {target}...")
+            try:
+                # Try g++ first
+                subprocess.run(["g++", "main.cpp", "-o", target], check=True)
+                subprocess.run(["chmod", "+x", target], check=True)
+                print("✅ Compilation successful!")
+            except Exception as e:
+                print(f"❌ Auto-compilation failed: {e}")
+
+ensure_engine()
+
+# Cross-platform EXE Path
+if sys.platform.startswith('win'):
+    EXE_PATH = os.path.join(BASE_DIR, 'main.exe')
+else:
+    EXE_PATH = os.path.join(BASE_DIR, 'huffman_engine')
 
 # ==========================================
 # PYTHON HUFFMAN FALLBACK (If C++ fails)
