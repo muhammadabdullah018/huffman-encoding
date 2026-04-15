@@ -38,19 +38,25 @@
 
     <div class="container">
         <header class="hero">
-            <h1 class="hero-title">Lossless<br><span class="gradient-text">Compression</span></h1>
-            <p class="hero-subtitle">High-efficiency Huffman coding algorithm for the modern web.</p>
+            <h1 class="hero-title">File<br><span class="gradient-text">Cruncher</span></h1>
+            <p class="hero-subtitle">The fastest way to shrink your files without losing a single pixel.</p>
         </header>
 
         <main>
             <div class="glass-card">
+                <!-- Instructions for Non-Techies -->
+                <div class="stepper">
+                    <div class="step"><span>1</span> Choose Mode</div>
+                    <div class="step"><span>2</span> Upload File</div>
+                    <div class="step"><span>3</span> Get Link</div>
+                </div>
+
                 <div class="tabs-container">
-                    <div class="tabs-glider"></div>
                     <button class="tab active" onclick="setMode('compress')" id="tab-compress">
-                        <i class="fa-solid fa-file-zipper"></i> Compress
+                        <i class="fa-solid fa-compress"></i> Shrink (Zip)
                     </button>
                     <button class="tab" onclick="setMode('decompress')" id="tab-decompress">
-                        <i class="fa-solid fa-file-arrow-up"></i> Decompress
+                        <i class="fa-solid fa-expand"></i> Unzip (Extract)
                     </button>
                 </div>
 
@@ -58,20 +64,21 @@
                     <input type="file" id="file-input" hidden>
                     <div class="upload-content">
                         <div class="icon-wrapper">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <i class="fa-solid fa-file-circle-plus"></i>
                         </div>
-                        <h3>Drop file to upload</h3>
-                        <p class="upload-hint">or click to browse</p>
-                        <p class="file-name" id="file-name"></p>
+                        <h3>Click to Select or Drop File</h3>
+                        <p class="upload-hint">Your file stays private and secure</p>
+                        <p class="file-name" id="file-name">No file selected yet</p>
                     </div>
                 </div>
 
                 <div class="action-area">
                     <button class="btn-primary" id="process-btn" disabled onclick="processFile()">
-                        <span>Start Compression</span>
-                        <i class="fa-solid fa-arrow-right"></i>
+                        <span id="btn-text">Shrink My File</span>
+                        <i class="fa-solid fa-bolt"></i>
                     </button>
                 </div>
+
 
                 <div class="status-panel" id="status-container" style="display: none;">
                     

@@ -1,26 +1,27 @@
 :root {
-    /* Palette */
+    /* Palette: Red, White, Black */
     --bg-void: #050505;
-    --bg-card: rgba(255, 255, 255, 0.03);
-    --border-glass: rgba(255, 255, 255, 0.08);
+    --bg-card: rgba(255, 255, 255, 0.02);
+    --border-glass: rgba(255, 255, 255, 0.06);
     
-    --primary: #7c3aed; /* Electric Violet */
-    --primary-glow: rgba(124, 58, 237, 0.5);
+    --primary: #ff4d4d; /* Bright Red */
+    --primary-glow: rgba(255, 77, 77, 0.4);
     
-    --success: #d9f99d; /* Acid Green */
-    --success-text: #365314;
+    --success: #ff4d4d; /* Same red for consistency in this theme */
+    --success-text: #ffffff;
     
     --text-main: #ffffff;
-    --text-muted: #a3a3a3;
+    --text-muted: #888888;
     
     /* Decoration */
-    --orb-1: #4c1d95;
-    --orb-2: #db2777;
+    --orb-1: #450a0a; /* Dark Red */
+    --orb-2: #171717; /* Off Black */
     
     /* Config */
     --ease-squish: cubic-bezier(0.5, -0.1, 0.1, 1.5);
     --ease-smooth: cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+
 
 /* Base */
 * {
@@ -158,10 +159,12 @@ body {
 }
 
 .gradient-text {
-    background: linear-gradient(135deg, var(--text-main), var(--text-muted));
+    background: linear-gradient(135deg, #fff 30%, #ff4d4d 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    text-shadow: 0 10px 30px rgba(255, 77, 77, 0.3);
 }
+
 
 .hero-subtitle {
     font-size: 0.95rem;
@@ -182,7 +185,37 @@ body {
     transition: transform 0.4s var(--ease-smooth);
 }
 
-/* Tabs */
+/* Stepper */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding: 0 10px;
+}
+
+.step {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+}
+
+.step span {
+    width: 24px;
+    height: 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.7rem;
+}
+
 .tabs-container {
     position: relative;
     display: flex;

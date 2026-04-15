@@ -17,10 +17,12 @@ function setMode(mode) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`tab-${mode}`).classList.add('active');
 
-    // Update button text
-    processBtn.innerText = mode === 'compress' ? 'Start Compression' : 'Start Decompression';
+    // Update button text with more friendly terms
+    const btnText = document.getElementById('btn-text');
+    btnText.innerText = mode === 'compress' ? 'Shrink My File' : 'Restore My File';
     resetUI();
 }
+
 
 function resetUI() {
     statusContainer.style.display = 'none';
@@ -30,7 +32,12 @@ function resetUI() {
 }
 
 // File Selection
+dropZone.addEventListener('click', () => {
+    fileInput.click();
+});
+
 fileInput.addEventListener('change', handleFileSelect);
+
 
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -84,7 +91,8 @@ async function processFile() {
 
         if (response.ok) {
             resultContent.style.display = 'block';
-            successMsg.innerText = currentMode === 'compress' ? 'Compression Successful!' : 'Decompression Successful!';
+            successMsg.innerText = currentMode === 'compress' ? '🎉 Shrink Successful!' : '🎉 Restore Successful!';
+
 
             const warningEl = document.getElementById('warning-msg');
             if (data.warning) {
